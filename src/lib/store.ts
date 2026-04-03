@@ -1,5 +1,6 @@
 import { promises as fs } from "fs";
 import path from "path";
+import { normalizeKeyPart } from "./cohortNormalize";
 import type { Cohort, CohortInput, StoredDocument } from "./types";
 
 const DATA_DIR = path.join(process.cwd(), "data");
@@ -35,10 +36,6 @@ async function readDb(): Promise<DbFile> {
 async function writeDb(db: DbFile) {
   await ensureDataDir();
   await fs.writeFile(DB_PATH, JSON.stringify(db, null, 2), "utf-8");
-}
-
-function normalizeKeyPart(s: string) {
-  return s.trim().replace(/\s+/g, " ");
 }
 
 export function cohortMatchKey(input: CohortInput) {
@@ -85,6 +82,37 @@ export async function findOrCreateCohort(input: CohortInput): Promise<Cohort> {
 export async function getCohortById(id: string): Promise<Cohort | null> {
   const db = await readDb();
   return db.cohorts.find((c) => c.id === id) ?? null;
+}
+
+/** 過去コホートから大学・学部・学科の組み合わせ一覧（重複除去・表示用の正規化済み文字列） */
+export async function listCohortPlaceTriples(): Promise<
+  { university: string; faculty: string; department: string }[]
+> {
+  const db = await readDb();
+  const seen = new Set<string>();
+  const out: { university: string; faculty: string; department: string }[] = [];
+  for (const c of db.cohorts) {
+    const uni = normalizeKeyPart(c.university);
+    const fac = normalizeKeyPart(c.faculty);
+    const dep = normalizeKeyPart(c.department);
+    if (!uni || !fac || !dep) continue;
+    const key = `${uni}\0${fac}\0${dep}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push({
+      university: c.university,
+      faculty: c.faculty,
+      department: c.department,
+    });
+  }
+  out.sort((a, b) => {
+    const u = a.university.localeCompare(b.university, "ja");
+    if (u !== 0) return u;
+    const f = a.faculty.localeCompare(b.faculty, "ja");
+    if (f !== 0) return f;
+    return a.department.localeCompare(b.department, "ja");
+  });
+  return out;
 }
 
 export async function listDocumentsForCohort(cohortId: string): Promise<StoredDocument[]> {

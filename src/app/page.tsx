@@ -1,8 +1,12 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { AdSenseBanner } from "@/components/ads/AdSenseBanner";
 import { AuthStatusPanel } from "@/components/auth/AuthStatusPanel";
+import { normalizeKeyPart } from "@/lib/cohortNormalize";
+
+type PlaceTriple = { university: string; faculty: string; department: string };
 
 export default function HomePage() {
   const router = useRouter();
@@ -14,6 +18,55 @@ export default function HomePage() {
   const [term, setTerm] = useState("zenki");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [placeTriples, setPlaceTriples] = useState<PlaceTriple[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/cohorts/suggestions");
+        const j = (await res.json()) as { triples?: PlaceTriple[] };
+        if (!cancelled && Array.isArray(j.triples)) setPlaceTriples(j.triples);
+      } catch {
+        /* 候補なしのまま入力可能 */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const universitySuggestions = useMemo(() => {
+    const s = new Set<string>();
+    for (const t of placeTriples) s.add(t.university);
+    return [...s].sort((a, b) => a.localeCompare(b, "ja"));
+  }, [placeTriples]);
+
+  const facultySuggestions = useMemo(() => {
+    if (!university.trim()) return [];
+    const nu = normalizeKeyPart(university);
+    const s = new Set<string>();
+    for (const t of placeTriples) {
+      if (normalizeKeyPart(t.university) === nu) s.add(t.faculty);
+    }
+    return [...s].sort((a, b) => a.localeCompare(b, "ja"));
+  }, [placeTriples, university]);
+
+  const departmentSuggestions = useMemo(() => {
+    if (!university.trim() || !faculty.trim()) return [];
+    const nu = normalizeKeyPart(university);
+    const nf = normalizeKeyPart(faculty);
+    const s = new Set<string>();
+    for (const t of placeTriples) {
+      if (
+        normalizeKeyPart(t.university) === nu &&
+        normalizeKeyPart(t.faculty) === nf
+      ) {
+        s.add(t.department);
+      }
+    }
+    return [...s].sort((a, b) => a.localeCompare(b, "ja"));
+  }, [placeTriples, university, faculty]);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -63,33 +116,72 @@ export default function HomePage() {
         </div>
 
         <form onSubmit={onSubmit} className="mt-8 space-y-4">
+          <p className="text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
+            誰かが一度でも登録した大学・学部・学科は、下矢印で候補から選べます（新規の正式名称でも入力可）。
+          </p>
           <label className="block text-sm font-medium text-zinc-800 dark:text-zinc-200">
             大学名
             <input
               required
+              name="university"
+              autoComplete="organization"
+              list="cohort-suggest-university"
               className="mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100"
               value={university}
               onChange={(e) => setUniversity(e.target.value)}
               placeholder="正式名称で入力"
             />
+            <datalist id="cohort-suggest-university">
+              {universitySuggestions.map((u) => (
+                <option key={u} value={u} />
+              ))}
+            </datalist>
           </label>
           <label className="block text-sm font-medium text-zinc-800 dark:text-zinc-200">
             学部
             <input
               required
+              name="faculty"
+              list="cohort-suggest-faculty"
               className="mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100"
               value={faculty}
               onChange={(e) => setFaculty(e.target.value)}
+              placeholder={
+                university.trim()
+                  ? facultySuggestions.length
+                    ? "候補から選ぶか入力"
+                    : "該当コホートがなければそのまま入力"
+                  : "先に大学名を入力すると候補が出ます"
+              }
             />
+            <datalist id="cohort-suggest-faculty">
+              {facultySuggestions.map((f) => (
+                <option key={f} value={f} />
+              ))}
+            </datalist>
           </label>
           <label className="block text-sm font-medium text-zinc-800 dark:text-zinc-200">
             学科・専攻など
             <input
               required
+              name="department"
+              list="cohort-suggest-department"
               className="mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100"
               value={department}
               onChange={(e) => setDepartment(e.target.value)}
+              placeholder={
+                university.trim() && faculty.trim()
+                  ? departmentSuggestions.length
+                    ? "候補から選ぶか入力"
+                    : "該当コホートがなければそのまま入力"
+                  : "大学・学部を入れると候補が出ます"
+              }
             />
+            <datalist id="cohort-suggest-department">
+              {departmentSuggestions.map((d) => (
+                <option key={d} value={d} />
+              ))}
+            </datalist>
           </label>
           <label className="block text-sm font-medium text-zinc-800 dark:text-zinc-200">
             入学年度
@@ -143,6 +235,7 @@ export default function HomePage() {
           </button>
         </form>
       </div>
+      <AdSenseBanner className="mx-auto mt-8 max-w-lg overflow-hidden" />
       <p className="mt-6 text-center text-xs text-zinc-500">
         入学年度が異なると学生要覧の内容も異なるため、別コホートとして完全に分離しています。
       </p>

@@ -8,6 +8,7 @@ import { DocumentList } from "@/components/DocumentList";
 import { DocumentUploadForm } from "@/components/DocumentUploadForm";
 import { PdfSearchPanel } from "@/components/PdfSearchPanel";
 import { DataOnlyChatPanel } from "@/components/DataOnlyChatPanel";
+import { AdSenseBanner } from "@/components/ads/AdSenseBanner";
 
 type TermQuery = "zenki" | "kouki" | "tsuunen" | "other";
 
@@ -172,6 +173,8 @@ export function WorkspaceClient({
           <li>大学の公式履修登録システムでの操作は、必ず大学の案内に従って行う。</li>
         </ol>
       </section>
+
+      <AdSenseBanner className="overflow-hidden rounded-xl border border-zinc-200/80 bg-zinc-50/50 p-2 dark:border-zinc-700/80 dark:bg-zinc-900/40" />
 
       <DocumentUploadForm cohortId={cohort.id} onUploaded={() => void load()} />
     </div>
