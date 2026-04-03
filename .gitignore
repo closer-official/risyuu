@@ -39,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# ローカルDB・PDF（入学年度別の個人アップロード）
+/data/
