@@ -28,9 +28,11 @@ export function AuthStatusPanel() {
   if (!firebaseReady) {
     return (
       <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-950 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-100">
-        Firebase が未設定です。コンソールでプロジェクトを作成し、<code className="rounded bg-amber-100/80 px-1 dark:bg-amber-900/60">.env.local</code> に
-        <code className="mx-1 rounded bg-amber-100/80 px-1 dark:bg-amber-900/60">NEXT_PUBLIC_FIREBASE_*</code>
-        を設定してください。
+        Firebase が未設定です。Firebase で Web アプリを作成し、本番ホストの環境変数（例: Vercel の{" "}
+        <span className="font-medium">Settings → Environment Variables</span>）に{" "}
+        <code className="rounded bg-amber-100/80 px-1 dark:bg-amber-900/60">NEXT_PUBLIC_FIREBASE_*</code>
+        と <code className="rounded bg-amber-100/80 px-1 dark:bg-amber-900/60">NEXT_PUBLIC_APP_URL</code>
+        を設定し、再デプロイしてください。
       </div>
     );
   }
