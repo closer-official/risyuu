@@ -1,15 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { getAdsenseClientId } from "@/lib/adsenseClientId";
 
 declare global {
   interface Window {
     adsbygoogle?: unknown[];
   }
-}
-
-function getClientId(): string {
-  return process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID?.trim() || "";
 }
 
 function getSlot(): string {
@@ -22,13 +19,13 @@ type Props = {
 
 /**
  * ディスプレイ広告（横長バナー想定・レスポンシブ）。
- * NEXT_PUBLIC_ADSENSE_CLIENT_ID（ca-pub-…）と NEXT_PUBLIC_ADSENSE_BANNER_SLOT が両方あるときだけ表示。
+ * クライアント ID は既定値または NEXT_PUBLIC_ADSENSE_CLIENT_ID。スロット必須。
  */
 export function AdSenseBanner({ className }: Props) {
   const [mounted, setMounted] = useState(false);
   const pushedRef = useRef(false);
 
-  const clientId = getClientId();
+  const clientId = getAdsenseClientId();
   const slot = getSlot();
 
   useEffect(() => {

@@ -1,13 +1,9 @@
 import Script from "next/script";
+import { getAdsenseClientId } from "@/lib/adsenseClientId";
 
-function clientId(): string | undefined {
-  return process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID?.trim() || undefined;
-}
-
-/** 広告クライアント ID があるときだけ adsbygoogle.js を 1 回読み込む */
+/** AdSense（adsbygoogle.js）。環境変数があればそちらを優先 */
 export function AdSenseScript() {
-  const id = clientId();
-  if (!id) return null;
+  const id = getAdsenseClientId();
   return (
     <Script
       id="adsbygoogle-init"
