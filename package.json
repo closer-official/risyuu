@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "firebase": "^12.11.0",
+    "lucide-react": "^1.7.0",
     "next": "16.2.2",
     "pdf-parse": "^2.4.5",
     "pdf-parse-legacy": "npm:pdf-parse@^1.1.1",
